@@ -55,7 +55,7 @@
                 <mxCell id="14" value="" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="225" y="1460" width="30" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="15" value="满二叉数" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                <mxCell id="15" value="满二叉树" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="187.5" y="1310" width="60" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="16" value="&lt;div style=&quot;color: rgb(171, 178, 191); background-color: rgb(40, 44, 52); font-family: Consolas, &amp;quot;Courier New&amp;quot;, monospace; font-size: 14px; line-height: 19px;&quot;&gt;左右节点都是完整的, 没有缺胳膊少腿&lt;/div&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
@@ -120,7 +120,7 @@
                 <mxCell id="31" value="" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="502.5" y="1500" width="30" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="32" value="完全二叉数" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                <mxCell id="32" value="完全二叉树" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="590" y="1300" width="70" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="33" value="&lt;div style=&quot;color: rgb(171, 178, 191); background-color: rgb(40, 44, 52); font-family: Consolas, &amp;quot;Courier New&amp;quot;, monospace; font-size: 14px; line-height: 19px;&quot;&gt;最底层从左往右的节点一定要是连续的才叫&lt;span style=&quot;color: #e5c07b;&quot;&gt;`&lt;/span&gt;&lt;span style=&quot;color: #98c379;&quot;&gt;完全二叉树&lt;/span&gt;&lt;span style=&quot;color: #e5c07b;&quot;&gt;`&lt;/span&gt;&lt;/div&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
@@ -362,7 +362,7 @@
                     <mxGeometry x="310" y="1360" width="90" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="147" value="存储方式&lt;br&gt;1. 线性存储(数组)&lt;br&gt;2. 链式存储(指针)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="2260" width="110" height="50" as="geometry"/>
+                    <mxGeometry x="85" y="2280" width="110" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="148" value="线性存储(了解)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="104" y="2370" width="60" height="30" as="geometry"/>
@@ -422,7 +422,7 @@
                     <mxGeometry x="184.20999999999998" y="2400" width="60" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="163" value="如何找孩子?&lt;br&gt;左孩子:2 * i + 1&lt;br&gt;右孩子: 2 * i + 2&lt;br&gt;i为当前元素下标&lt;br&gt;例如:找b(下标为1)元素的两个儿子&lt;br&gt;2 * 1 + 1 = 3&lt;br&gt;2 * 1 + 2 = 4" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="52.5" y="2600" width="200" height="140" as="geometry"/>
+                    <mxGeometry x="64" y="2590" width="200" height="140" as="geometry"/>
                 </mxCell>
                 <mxCell id="164" value="0" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="145" y="2400" width="15" height="30" as="geometry"/>

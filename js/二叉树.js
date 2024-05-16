@@ -4,7 +4,7 @@ function TreeNode(val, left, right) {
     this.left = (left === undefined ? null : left);
     this.right = (right === undefined ? null : right);
 }
-//N叉树结构
+//三叉树结构
 function Node(val, left, right, next) {
     this.val = (val === undefined ? null : val);
     this.left = (left === undefined ? null : left);
@@ -14,28 +14,67 @@ function Node(val, left, right, next) {
 
 /**
  * 
- * @param {number[]} nums 
- * @param {number} index
- * @returns {TreeNode}
- * 给一个数组创建二叉树
- * 
- * 二叉树线性存储, 左孩子: (2 * i + 1); 右孩子: (2 * i + 2)
+ * @param {number} index 
+ * @returns {TreeNode|null}
+ * 使用层序遍历找某个孩子, 从0下标开始,找不到返回null
+ * 注: null节点不算下标范围内
  */
-const build_tree = (nums, index = 0) => {
-    //遇到空节点直接返回null
-    if(index >= nums.length || nums[index] === null) return null;
-
-    const node = new TreeNode(nums[index], null, null);//中
-
-    node.left = build_tree(nums, 2 * index + 1);//左
-    node.right = build_tree(nums, 2 * index + 2);//右
-
-    return node;
+TreeNode.prototype.get = function(index) {
+    if(this === null) return null;
+    const queue = [];
+    let cur_size = 0;//记录当前层需要弹出多少个元素
+    let count = -1;// 记录已经遍历了多少个元素, 当count == index时 return
+    queue.push(this);
+    while(queue.length !== 0) {
+        cur_size = queue.length;
+        //弹出当前层的元素
+        while(cur_size--) {
+            const node = queue.shift();
+            count++;
+            if(index === count) return node;
+            if(node.left !== null) queue.push(node.left);
+            if(node.right !== null) queue.push(node.right);
+        }
+    }
+    //找不到的情况(例如:下标越界)
+    return null;
 }
-//测试用例
-const head_1 = build_tree([6, 3, 9, 2, 4, null, null]);
-const head_2 = build_tree([6, 3, 9, 6, null, null]);
-const head_3 = build_tree([1, 2, 2, 3, 4, 4, 3, 5, 6, null, null, null, null, 6, 5]);
+
+/**
+ * 
+ * @param {number[]} nums 
+ * @returns {TreeNode}
+ * 云层遍历实现给定一个数组生成一颗二叉树
+ */
+const build_tree = (nums) => {
+    //控制元素下标, 但null不会移动下标
+    let i = 0;
+    let root = new TreeNode(nums[0]);//根节点
+    const queue = [];//null节点需入队列
+    queue.push(root);//数组第一个元素入队列
+    while(queue.length !== 0) {
+        // 1.  弹出队列首元素
+        const node = queue.shift();
+        if(node === null) continue;
+        //在最后元素的左右孩子越界, 添加条件判断,超出边界就不为队列添加数值
+        const left = 2 * i + 1;//左孩子下标
+        const right = 2 * i + 2;//右孩子下标
+        if(left < nums.length) {
+            //因为数组中可能有着null节点, 所以需要做个判断
+            const left_node = nums[left] !== null ? new TreeNode(nums[left]) : null;
+            queue.push(left_node);
+            node.left = left_node;
+        }
+        if(right < nums.length) {
+            const right_node = nums[right] !== null ? new TreeNode(nums[right]) : null;
+            queue.push(right_node);
+            node.right = right_node;
+        }
+        //每弹出一个元素, 索引加加
+        i++;
+    }
+    return root;
+}
 
 /**
  * @param {TreeNode} root
@@ -199,29 +238,6 @@ var invertTree = function(root) {
     resevre(root);
     return root;
 };
-/**
- * 
- * @param {TreeNode} left 
- * @param {TreeNode} right 
- */
-const compare = (left, right) => {
-    /*
-        出错或正确的5种形式
-        1. 左为null右不为null false
-        2. 右为null左不为null false
-        3. 左右的数值并不相同 false
-        4.左右都为null true
-        5. 左右都不为null 继续
-    */
-   if(left === null && right !== null) return false;
-   if(left !== null && right === null) return false;
-   if(left === null && right === null) return true;
-   if(left.val !== right.val) return false;
-   //左右都不为null的情况
-    const inside = compare(left.left, right.right);//外侧
-    const outside = compare(left.right, right.left);//外侧
-    return inside && outside;
-}
 
 /**
  * @param {TreeNode} root
@@ -229,17 +245,36 @@ const compare = (left, right) => {
  * 101. 对称二叉树
  */
 var isSymmetric = function(root) {
-    if(root === null) return false;
-    /*
-        此题只可以使用后序遍历(左右中)
-        比较根节点的左右子节点
-        左子树使用: 左右中
-        右子树使用: 右左中
-        外侧和外侧比较; 内测和内测比较
-    */
-    const result = compare(root.left, root.right);
-    return result;
+    //使用前序遍历, 左子树使用"中左右"; 右子树使用"中右左"
+    //这个函数需要同时操控两颗树,进行向下移动来判断是否对称
+    /**
+     * 
+     * @param {TreeNode} left 左节点
+     * @param {TreeNode} right 右节点
+     * @returns {boolean}
+     */
+    function traversal(left, right) {
+        /*确定终止条件
+            1. 左为null, 右不为null 返回false
+            2. 左不为null, 右为null 返回 false
+            3. 节点的val值不同 返回false
+            4. 值都为null 返回true
+            5. 左右节点不为null, 且值相同继续向下遍历
+        */
+        if(left === null && right !== null) return false;
+        if(left !== null && right === null) return false;
+        if(left === null && right === null) return true;
+        if(left.val !== right.val) return false;
+        //确定单层逻辑 下列就是左右节点不为null, 且值相同继续向下遍历
+        const outside = traversal(left.left, right.right);//外侧
+        if(!outside) return outside;
+        const inside = traversal(left.right, right.left);//内测
+        if(!inside) return inside;
+        return outside && inside;
+    }
+    return traversal(root.left, root.right);
 };
+
 /**
  * 
  * @param {TreeNode} root 
@@ -646,22 +681,554 @@ var constructMaximumBinaryTree = function (nums) {
  * @param {TreeNode} root1
  * @param {TreeNode} root2
  * @return {TreeNode}
+ * 617. 合并二叉树
  */
 var mergeTrees = function(root1, root2) {
+    /*
+        两者都为null的情况下, 返回对方, 也就还是返回null
+        二叉树只要有一方为null, 就应该返回对方
+        因为两颗树是同步进行的, 所以位置相同
+    */
+    if(root1 === null) return root2;
+    if(root2 === null) return root1;
+    //确定单层逻辑
+    root1.val += root2.val;//中
+    root1.left = mergeTrees(root1.left, root2.left);//左
+    root1.right = mergeTrees(root1.right, root2.right);//右
+    return root1;
+};
+
+const head_5 = build_tree([1,3,2,5]);
+const head_6 = build_tree([2,1,3,null,4,null,7]);
+
+const mergeTrees_result = mergeTrees(head_5, head_6);
+
+
+
+/**
+ * @param {TreeNode} root
+ * @param {number} val
+ * @return {TreeNode}
+ * 700. 二叉搜索树中的搜索(递归)
+ */
+var searchBST = function(root, val) {
     //确定终止条件
-    if(root1 === null || root2 === null) {
-        
+    if(root === null || root.val === val) return root;
+    let result;//目标值
+    //二叉搜索树的特性:左节点的值一定小于根节点; 右节点一定大于根节点
+    if(root.val > val) {
+        result = searchBST(root.left, val);
+    }
+    if(root.val < val) {
+        result = searchBST(root.right, val);
+    }
+    return result;
+};
+
+var searchBST = function(root, val) {
+    let cur = root;
+    while(cur !== null) {
+        if(cur.val === val) return cur;
+        if(cur.val > val) {
+            cur = cur.left;
+        } else {
+            cur = cur.right;
+        }
+    }
+    //循坏结束, 则代表没有return值, cur为null, 直接返回null
+    return null;
+}
+const searchBST_head_1 = build_tree([4,2,7,1,3, null, 8]);
+const searchBST_result = searchBST(searchBST_head_1, 3);
+
+/**i
+ * @param {TreeNode} root
+ * @return {boolean}
+ * 98. 验证二叉搜索树
+ */
+var isValidBST = function(root) {
+    //中序遍历
+    let max = 0;
+    function isvalid(node) {
+        //确定终止条件
+        if(node === null) return true;//遇到null节点返回true. 在中序遍历,值一定是递增的, 通过是否递增来去确定是否返回false
+        const left = isvalid(node.left);
+        //存在的问题可能是"node.val在最的最小节点比max的初始值还要小"
+        if(node.val > max) {
+            max = node.val;
+        } else {
+            return false;
+        }
+        const right = isvalid(node.right);
+        return left && right;
+    }
+    return isvalid(root);
+};
+/**
+ * @param {TreeNode} root
+ * @return {boolean}
+ * 98. 验证二叉搜索树
+ */
+var isValidBST = (root) => {
+    /* 思路: 一般用来验证二叉树, 都是使用中序遍历, 因为根据二叉搜索树的特性
+    所得到的结果一定是递增的数组. 根据这特性来验证二叉搜索树
+    使用"pre"变量代替"最大值变量", 因为最大值变量在初始化时不一定就是最大的变量 */
+    let pre = null;
+    function isValid(node) {
+        //遇到null节点返回true. false的判断应在"中"的位置, 即节点是否是递增的趋势
+        if(node === null) return true;
+        const left = isValid(node.left);
+        // 在中序遍历,值一定是递增的, 通过是否递增来去确定是否返回false
+        if(pre !== null && pre.val >= node.val) return false;
+        pre = node;
+        const right = isValid(node.right);
+        return left && right;
+    }
+    //每个子树都可以是中节点
+    return isValid(root);
+}
+
+
+const isValidBST_head_1 = build_tree([5,3,10,1,null,6,11]);
+const isValidBST_head_2 = build_tree([2,1,3]);
+const isValidBST_head_3 = build_tree([5,1,4,null,null,3,6]);
+
+const isValidBST_result = isValidBST(isValidBST_head_1);
+
+function inorderTravers(root, result_arr) {
+    //确定终止条件
+    if(root === null) return;
+    inorderTravers(root.left, result_arr);
+    result_arr.push(root.val);
+    inorderTravers(root.right, result_arr);
+}
+
+/**
+ * @param {TreeNode} root
+ * @return {number}
+ * 530. 二叉搜索树的最小绝对差
+ */
+var getMinimumDifference = function(root) {
+    //双指针. 一个指针cur指向当前节点, 另一个指针pre指向cur的前一个节点
+    let pre = null;
+    let result = 100001;//取个最大的值(力扣上的最大值为100000)
+    /**
+     * 
+     * @param {TreeNode} cur 
+     * @returns {void}
+     */
+    let travelsal = (cur) => {
+        if(cur === null) return;
+        travelsal(cur.left);
+        if(pre !== null) {
+            result = Math.min(result, cur.val - pre.val);
+        }
+        pre = cur;
+        travelsal(cur.right);
+
+    }
+    travelsal(root);
+    return result;
+};
+
+const getMinimumDifference_head_1 = build_tree([5, 3, 10, 1, null, 6, 11]);
+const getMinimumDifference_result = getMinimumDifference(getMinimumDifference_head_1);
+
+/**
+ * @param {TreeNode} root
+ * @return {number[]}
+ * 501. 二叉搜索树中的众数
+ * 此题满足:
+ * 结点左子树中所含节点的值 "小于等于" 当前节点的值
+ * 结点右子树中所含节点的值 "大于等于" 当前节点的值
+ */
+var findMode = function(root) {
+    //双指针cur, pre和中序遍历. 根据二叉搜索树的特性,众数出现的位置一定在相邻的元素之间
+    const result_arr = [];
+    let pre = null;
+    let maxCount = 0;//记录最大次数
+    let count = 0;//记录当前元素次数
+    /**
+     * 
+     * @param {TreeNode} cur 
+     * @returns {void}
+     */
+    let travelsal = (cur) => {
+        if(cur === null) return;
+        travelsal(cur.left);//左
+        //单层逻辑
+        if(pre === null) {//pre指针指向null, 则已经有一个元素出现
+            count = 1;
+        } else if(pre.val === cur.val) {//不为null且相等
+            count++;
+        } else {//不为null也不相等
+            count = 1;
+        }
+        pre = cur;
+        if(count === maxCount) result_arr.push(cur.val);
+        if(count > maxCount) {
+            maxCount = count;//更新最大次数
+            result_arr.length = 0;//清空数组
+            result_arr.push(cur.val);//将最新的众数放在数组中
+        }
+        travelsal(cur.right);
+    }
+    travelsal(root);
+    return result_arr;
+};
+
+const findMode_head_1 = build_tree([5,2,6,2, null, 6, null]);
+
+const findMode_head_2 = build_tree([5,2,6,2,null,6,null]);
+
+const findMode_result_1 = findMode(findMode_head_1);
+
+const findMode_result_2 = findMode(findMode_head_2);
+
+/**
+ * @param {TreeNode} root
+ * @param {TreeNode} p
+ * @param {TreeNode} q
+ * @return {TreeNode}
+ * 236. 二叉树的最近公共祖先
+ */
+var lowestCommonAncestor = function(root, p, q) {//确定参数和返回值
+    //二叉树想要从下往上走, 就需要使用后序遍历
+    //2. 确定终止条件
+    if(root === null) return null;//可以想一个最极端的, 即root等于null应该返回什么
+    if(root === p || root === q) return root;
+    const left = lowestCommonAncestor(root.left, p, q);//左
+    const right = lowestCommonAncestor(root.right, p, q);//右
+    /*
+        在下列"中"的逻辑
+        1. 若当前"中"节点的左右子节点都为null, 最终也应该返回"null"
+        2. 若当前"中"节点的左右子节点的val满足"p"和"q", 则返回自己, 最近公共祖先
+        3. 若当前"中"节点的左右子节点的val只满足"p"或"q", 则返回满足条件的"p"或"q"
+    */
+    if(left !== null && right !== null) {
+        //即找到了q和p, 直接返回自己, 因为自己就是"二叉树的最近公共祖先"
+        return root;
+    } else if(left !== null && right === null) {
+        return left;
+    } else if(right !== null && left === null) {
+        return right;
+    } else {
+        //left和right都为null
+        return null;
     }
 };
 
+const lowestCommonAncestor_head_1 = build_tree([3,5,1,6,2,0,8,null,null,7,4]);
+const lowestCommonAncestor_p = lowestCommonAncestor_head_1.get(7);
+const lowestCommonAncestor_q = lowestCommonAncestor_head_1.get(8);
 
-// const result = hasPathSum(head, 13);
+const lowestCommonAncestor_result = lowestCommonAncestor(lowestCommonAncestor_head_1, lowestCommonAncestor_p, lowestCommonAncestor_q);
 
-// const result = buildTree([2, 3, 4, 6, 9], [2, 4, 3, 9, 6]);
 
-// const result = buildTree([9,3,15,20,7], [9,15,7,20,3]);
+ /**
+ * @param {TreeNode} root
+ * @param {TreeNode} p
+ * @param {TreeNode} q
+ * @return {TreeNode}
+ * 235. 二叉搜索树的最近公共祖先
+ */
+var lowestCommonAncestor = function(root, p, q) {
+    /* 此题没有顺序遍历, 因为二叉搜索树自己就有着特征 
+       1. 如果当前节点值大于p和q的值, 则最近公共祖先一定在"左子树"中
+       2. 如果当前节点值小于p和q的值, 则最近公共祖先一定在"右子树"中
+       3. 当节点值首次出现在p和q的值之间, 则这个节点就是"最近公共祖先"
+    */
+    if(root === null) return null;
+    let left = null;
+    let right = null;
+    //单层逻辑
+    if(root.val > p.val && root.val > q.val) {
+        left = lowestCommonAncestor(root.left, p, q);
+        if(left !== null) return left;
+    }
+    if(root.val < p.val && root.val < q.val) {
+        right = lowestCommonAncestor(root.right, p, q);
+        if(right !== null) return right;
+    }
+    return root;
+};
 
-// const result_1 = buildTree([2, 1], [2, 1]);
+ /**
+ * @param {TreeNode} cur
+ * @param {TreeNode} p
+ * @param {TreeNode} q
+ * @return {TreeNode}
+ * 235. 二叉搜索树的最近公共祖先(迭代饭)
+ */
+var lowestCommonAncestor = function(cur, p, q) {
+    while(cur !== null) {
+        if(cur.val > p && cur.val > q) {
+            cur = cur.left;
+        } else if(cur.val < p && cur.val < q) {
+            cur = cur.right;
+        } else {
+            return cur;
+        }
+    }
+    return null;
+};
 
-// const result = constructMaximumBinaryTree([3,2,1,6,0,5])
+const lowestCommonAncestor_head_2 = build_tree([6,2,8,0,4,7,9,null,null,3,5]);
 
+const lowestCommonAncestor_1_p = lowestCommonAncestor_head_2.get(7);
+const lowestCommonAncestor_1_q = lowestCommonAncestor_head_2.get(8);
+
+const lowestCommonAncestor_result_2 = lowestCommonAncestor(lowestCommonAncestor_head_2, lowestCommonAncestor_1_p, lowestCommonAncestor_1_q);
+
+/**
+ * @param {TreeNode} root
+ * @param {number} val
+ * @return {TreeNode}
+ * 701. 二叉搜索树中的插入操作
+ */
+var insertIntoBST = function(root, val) {
+    // 插入方式: "只是插入节点, 但确定的节点完全没修改过"
+    if(root === null) return new TreeNode(val);
+    /**
+     * 
+     * @param {TreeNode} cur 
+     * @param {number} val
+     * @returns {void} 
+     */
+    const traversal = (cur, val) => {// 1. 确定参数和返回值
+        //想象一个最极端的方式, cur为null, 那么这是应该返回一个节点,并且值为"null"
+        // 2. 确定终止条件
+        if(cur.val > val && cur.left === null) {
+            cur.left = new TreeNode(val);
+            return;
+        }
+        if(cur.val < val && cur.right === null) {
+            cur.right = new TreeNode(val);
+            return;
+        }
+        //3. 确定单层逻辑
+        if(cur.val > val) {
+            //在左
+            traversal(cur.left, val);
+        }
+        if(cur.val < val) {
+            traversal(cur.right, val);
+        }
+
+    }
+    traversal(root, val);
+    return root;
+};
+
+/**
+ * @param {TreeNode} root
+ * @param {number} val
+ * @return {TreeNode}
+ * 701. 二叉搜索树中的插入操作
+ */
+var insertIntoBST = function(root, val) {// 插入方式: "会对树结构进行重新赋值"
+    //确定终止条件, 想象一个最简单的例子, root为null这是就应该直接返回val节点
+    if(root === null) return new TreeNode(val);
+    //根据二叉搜索树的特性只会走一边, 另一边原封不动
+    if(root.val > val) {
+        root.left = insertIntoBST(root.left, val);
+    }
+    if(root.val < val) {
+        root.right = insertIntoBST(root.right, val);
+    }
+    return root;
+
+}
+
+const insertIntoBST_head_1 = build_tree([4,2,7,1,3]);
+
+const insertIntoBST_result = insertIntoBST(insertIntoBST_head_1, 0);
+
+/**
+ * @param {TreeNode} root
+ * @param {number} key
+ * @return {TreeNode}
+ * 450. 删除二叉搜索树中的节点
+ */
+var deleteNode = function(root, key) {//1. 确定参数和返回值
+    /*  删除的节点逻辑写在终止条件中(采用向上传值)
+        1. 当前节点为null
+        2. 当前为叶子节点
+        3. 当前节点的左孩子不为null, 右孩子为null
+        4. 当前节点的左孩子为为null, 右孩子不为null
+        5. 当前节点的左右孩子都不为null
+    */
+    //2. 确定终止条件
+    if(root === null) return null;//想一个极端的例子, 根节点为null应该返回什么
+    if(root.val === key && root.left === null && root.right === null) return null;//因为采用的是向上传值, 所以返回null, 以此到达"删除节点"
+    if(root.val === key && root.left !== null && root.right === null) return root.left;
+    if(root.val === key && root.right !== null && root.left === null) return root.right;
+    if(root.val === key && root.left !== null && root.right !== null) {
+        //采用方式: 将当前节点的左子树, 放在右子树上. 为了不破坏二叉搜索树特性, 因把左子树放在比需要删除的元素大一点的节点上, 也就是右子树中最小的元素
+        let cur = root.right;
+        //因为获得右子节点的最小值不一定只有一层, 所以使用循环
+        while(cur.left !== null) cur = cur.left;
+        //这是cur.left为null, 放置左子树
+        cur.left = root.left;
+        //接下来的逻辑就相当于"当前节点的左孩子为为null, 右孩子不为null"
+        return root.right;
+    }
+    //单层逻辑
+    if(root.val > key) {
+        root.left = deleteNode(root.left, key);
+    }
+    if(root.val < key) {
+        root.right = deleteNode(root.right, key);
+    }
+    return root;
+};
+
+const deleteNode_head_1 = build_tree([3,2,7,1,null,5,9,null,null,null,null,4,6,8,10]);
+
+const deleteNode_result = deleteNode(deleteNode_head_1, 7);
+
+/**
+ * @param {TreeNode} root
+ * @param {number} low
+ * @param {number} high
+ * @return {TreeNode}
+ * 669. 修剪二叉搜索树
+ */
+var trimBST = function(root, low, high) {
+    /*
+        这个地方无法使用二叉搜索树的特性只走一条路, 因为两边可能都会有着符合条件的节点
+        1. 如果当前节点值小于左边界"low", 那么当前节点的右节点可能存在符合条件的节点
+        2. 如果当前节点值大于右边界"high", 那么当前节点的左节点可能存在符合条件的节点
+    */
+    if(root === null) return null;
+    //左边和右边的逻辑需要单独处理
+    if(root.val < low) {
+        //当前节点的右节点有可能有着符合条件的节点
+        const right = trimBST(root.right, low, high);
+        return right;
+    }
+    if(root.val > high) {
+        //当前节点的左节点有可能有着符合条件的节点
+        const left = trimBST(root.left, low, high);
+        return left;
+    }
+    root.left = trimBST(root.left, low, high);
+    root.right = trimBST(root.right, low, high);
+    return root;
+};
+
+const trimBST_head_1 = build_tree([1,0,2]);
+const trimBST_head_2 =  build_tree([7,0,9,null,3,null,null,2,null,1]);
+
+const trimBST_result_1 = trimBST(trimBST_head_1,1,2);
+const trimBST_result_2 = trimBST(trimBST_head_2,2,7);
+
+/**
+ * @param {number[]} nums
+ * @return {TreeNode}
+ * 108. 将有序数组转换为二叉搜索树
+ */
+var sortedArrayToBST = function(nums) {
+    //如果数组什么都没有就没有必要加节点了, 直接返回null
+    if(nums.length === 0) return null;
+
+    //单层逻辑
+    const middle = Math.floor(nums.length / 2);//中间元素下标
+    const node = new TreeNode(nums[middle], null, null);
+    //切割数组
+    const left = nums.slice(0, middle);
+    node.left = sortedArrayToBST(left);
+    const right = nums.slice(middle + 1, nums.length);
+    node.right = sortedArrayToBST(right);
+    return node;
+};
+
+var sortedArrayToBST = function(nums) {
+    /**
+     * 
+     * @param {number[]} nums 
+     * @param {number} right 控制下标右边界
+     * @param {number} left 控制下标左边界
+     * 
+     */
+    let traversal = (nums, left ,right) => {
+        //想象一下nums数组中只有一个元素, 这时left和right指向同一个元素, 如果等于返回null就错过了这唯一的节点
+        if(left > right) return null;
+        const middle = Math.floor((right + left) / 2);
+        const node = new TreeNode(nums[middle], null, null);
+        node.left = traversal(nums, left, middle - 1);
+        node.right = traversal(nums, middle + 1, right);
+        return node;
+    }
+    const result = traversal(nums, 0, nums.length - 1);
+    return result;
+};
+
+//数组是有序的
+const sortedArrayToBST_result = sortedArrayToBST([-10,-3,0,5,9]);
+
+/**
+ * @param {TreeNode} root
+ * @return {TreeNode}
+ * 538. 把二叉搜索树转换为累加树 (使用累加值的方式)
+ */
+var convertBST = function(root) {
+    /*
+        中序遍历, 但使用的是"右中左"
+        [0,1,2,3,4,5,6,7,8] 从后往前逐渐累积
+        就可以实现转换成累加树
+    */
+    let sum = 0;//累计的值
+    /**
+     * 
+     * @param {TreeNode} node 
+     * @returns {void} 无返回值
+     */
+    const traversal = (node) => {
+        if(node === null) return;
+        traversal(node.right);//右
+        //中
+        sum += node.val;
+        node.val = sum;
+        //左
+        traversal(node.left);
+
+    }
+    traversal(root);
+    return root;
+};
+
+/**
+ * @param {TreeNode} root
+ * @return {TreeNode}
+ * 538. 把二叉搜索树转换为累加树 (双指针pre和cur)
+ */
+var convertBST = function(root) {
+    /*
+        中序遍历, 但使用的是"右中左"
+        [0,1,2,3,4,5,6,7,8] 从后往前逐渐累积
+        就可以实现转换成累加树
+    */
+   let pre = null;
+    /**
+     * 
+     * @param {TreeNode} cur 
+     * @returns {void} 无返回值
+     */
+   const traversal = (cur) => {
+    if(cur === null) return;
+    traversal(cur.right);//右
+    //中
+    if(pre !== null) {
+        cur.val += pre.val;
+    }
+    pre = cur;
+    //左
+    traversal(cur.left);
+   }
+   traversal(root);
+   return root;
+};
+
+const convertBST_head_1 = build_tree([4,1,6,0,2,5,7,null,null,null,3,null,null,null,8]);
+const convertBST_result = convertBST(convertBST_head_1);
